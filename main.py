@@ -7,7 +7,7 @@ from utils.logger import logger
 from utils.memory_store import conversation_memory
 
 from langfuse.langchain import CallbackHandler
-
+from langfuse import observe
 
 def print_banner():
     """Print welcome banner"""
@@ -24,6 +24,7 @@ Type 'clear' to clear conversation history.
 """
     print(banner)
 
+@observe(name="agent-run")
 def run_agent(query: str) -> str:
     """Run the agent with a query"""
     langfuse_handler = CallbackHandler()

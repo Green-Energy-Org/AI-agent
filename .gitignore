@@ -1,26 +1,38 @@
-﻿# Environment variables
-.env
-
-# Python
+﻿# Python
 __pycache__/
 *.py[cod]
-*.class
-*.so
+*.pyo
+*.pyd
 .Python
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+*.whl
+
+# Environments
+.env
+.env.*
+!.env.example
 venv/
-VENV1/
 env/
-ENV/
+.venv/
+
+# Testing & coverage
+.pytest_cache/
+.coverage
+coverage.xml
+junit.xml
+htmlcov/
+.ruff_cache/
+
+# Docker
+*.log
 
 # IDE
-.vscode/
 .idea/
+.vscode/
 *.swp
 *.swo
-
-# OS
 .DS_Store
-Thumbs.db
-
-# Logs
-*.log

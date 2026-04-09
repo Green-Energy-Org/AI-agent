@@ -11,7 +11,7 @@ from config.settings import settings
 from utils.logger import logger
 from utils.memory_store import conversation_memory
 
-from langfuse import get_client
+from langfuse import observe, get_client
 from langfuse.langchain import CallbackHandler
 
 # Initialize Langfuse client
@@ -28,6 +28,7 @@ llm = ChatGroq(
     max_tokens=settings.MAX_TOKENS
 )
 
+@observe(name="reasoning-node")
 def reasoning_node(state: AgentState) -> AgentState:
     """
     Agent analyzes the query and outputs structured decision.
@@ -131,6 +132,7 @@ def reasoning_node(state: AgentState) -> AgentState:
     state["iteration"] += 1
     return state
 
+@observe(name="tool-execution-node")
 def tool_execution_node(state: AgentState) -> AgentState:
     """
     Pure tool executor - NO reasoning, NO prompt engineering.
@@ -195,6 +197,7 @@ def tool_execution_node(state: AgentState) -> AgentState:
     
     return state
 
+@observe(name="answer-node")
 def answer_node(state: AgentState) -> AgentState:
     """
     Generate final answer based on all gathered information.

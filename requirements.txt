@@ -7,3 +7,11 @@ python-dotenv==1.0.0
 pydantic==2.10.3
 colorama==0.4.6
 langfuse>=2.58.0
+langfuse[observe]>=4.0.6
+# Testing
+pytest==8.3.3
+pytest-cov==6.0.0
+pytest-mock==3.14.0
+
+# Code quality
+ruff==0.8.0

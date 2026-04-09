@@ -26,6 +26,13 @@ class Settings:
     
     # Tool Configuration
     WEB_SEARCH_MAX_RESULTS = 5
+
+    LANGFUSE_SECRET_KEY = os.getenv("LANGFUSE_SECRET_KEY")         # sk-lf-...
+    LANGFUSE_PUBLIC_KEY = os.getenv("LANGFUSE_PUBLIC_KEY")         # pk-lf-...
+    LANGFUSE_BASE_URL   = os.getenv("LANGFUSE_BASE_URL")
+    
+    APP_ENV     = os.getenv("APP_ENV", "development")              # development | staging | production
+    APP_VERSION = os.getenv("APP_VERSION", "0.1.0")
     
     @classmethod
     def validate(cls):

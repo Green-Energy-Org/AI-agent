@@ -1,0 +1,135 @@
+name: LLMOps CI/CD
+
+on:
+  push:
+    branches: ["main", "master"]
+  pull_request:
+    branches: ["main", "master"]
+  workflow_dispatch:
+    inputs:
+      target_job:
+        description: 'Sélectionnez le job à tester'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - setup
+          - install
+          - lint
+          - test
+          - docker-build
+          - docker-push
+          - deploy
+
+
+env:
+  PROJECT_NAME: "DevOps-AI-AGENT"
+  PROJECT_CATEGORY: "IA"
+  DOCKER_IMAGE: "${{ secrets.DOCKERHUB_USERNAME }}/devops-ai-agent"
+  LANGFUSE_BASE_URL: "http://localhost:3000"
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  # 1. SETUP
+  setup:
+    name: "1 · Setup"
+    if: github.event.inputs.target_job == 'setup' || github.event.inputs.target_job == 'all' || github.event_name != 'workflow_dispatch'
+    runs-on: self-hosted
+    outputs:
+      short_sha: ${{ steps.vars.outputs.short_sha }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Compute Vars
+        id: vars
+        run: echo "short_sha=${GITHUB_SHA::8}" >> "$GITHUB_OUTPUT"
+      - name: Environment Info
+        run: |
+          python3 --version
+          docker --version
+
+  # 2. INSTALL
+  install:
+    name: "2 · Install"
+    needs: setup
+    if: always() && (github.event.inputs.target_job == 'install' || github.event.inputs.target_job == 'all' || github.event_name != 'workflow_dispatch')
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install Dependencies
+        run: |
+          python3 -m venv .venv
+          source .venv/bin/activate
+          pip install --upgrade pip
+          pip install -r requirements.txt 
+
+  # 3. LINT
+  lint:
+    name: "3 · Lint"
+    needs: install
+    if: always() && (github.event.inputs.target_job == 'lint' || github.event.inputs.target_job == 'all' || github.event_name != 'workflow_dispatch')
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Run Ruff
+        run: python3 -m ruff check .
+
+  # 4. TEST
+  test:
+    name: "4 · Test"
+    needs: lint
+    if: always() && (github.event.inputs.target_job == 'test' || github.event.inputs.target_job == 'all' || github.event_name != 'workflow_dispatch')
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Run Pytest
+        env:
+          LANGFUSE_BASE_URL: ${{ env.LANGFUSE_BASE_URL }}
+        run: python3 -m pytest tests/
+
+  # 5. DOCKER BUILD 
+  docker-build:
+    name: "5 · Docker Build"
+    needs: test
+    if: always() && (github.event.inputs.target_job == 'docker-build' || github.event.inputs.target_job == 'all' || github.event_name != 'workflow_dispatch')
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Build Local Image
+        run: |
+          docker build -t ${{ env.DOCKER_IMAGE }}:latest \
+                       -t ${{ env.DOCKER_IMAGE }}:${{ needs.setup.outputs.short_sha }} .
+
+  # 6. DOCKER PUSH
+  docker-push:
+    name: "6 · Docker Push"
+    needs: [setup, docker-build]
+    if: always() && (github.event.inputs.target_job == 'docker-push' || github.event.inputs.target_job == 'all' || github.event_name != 'workflow_dispatch')
+    runs-on: self-hosted
+    steps:
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Push Images
+        run: |
+          docker push ${{ env.DOCKER_IMAGE }}:latest
+          docker push ${{ env.DOCKER_IMAGE }}:${{ needs.setup.outputs.short_sha }}
+
+  # 7. DEPLOY
+  deploy:
+    name: "7 · Deploy"
+    needs: docker-push
+    if: always() && (github.event.inputs.target_job == 'deploy' || github.event.inputs.target_job == 'all' || github.event_name != 'workflow_dispatch')
+    runs-on: self-hosted
+    steps:
+      - name: Docker Compose Deploy
+        run: |
+          docker compose pull
+          docker compose up -d --force-recreate
