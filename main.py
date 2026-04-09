@@ -6,6 +6,9 @@ from config.settings import settings
 from utils.logger import logger
 from utils.memory_store import conversation_memory
 
+from langfuse.langchain import CallbackHandler
+
+
 def print_banner():
     """Print welcome banner"""
     banner = f"""
@@ -23,7 +26,7 @@ Type 'clear' to clear conversation history.
 
 def run_agent(query: str) -> str:
     """Run the agent with a query"""
-    
+    langfuse_handler = CallbackHandler()
     # Initialize state with proper schema
     initial_state: AgentState = {
         "query": query,
@@ -39,7 +42,7 @@ def run_agent(query: str) -> str:
     
     try:
         # Run the agent graph
-        final_state = agent_graph.invoke(initial_state)
+        final_state = agent_graph.invoke(initial_state,config={"callbacks": [langfuse_handler]})
         return final_state["final_answer"]
     
     except Exception as e:

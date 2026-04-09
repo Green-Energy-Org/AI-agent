@@ -6,3 +6,4 @@ tavily-python==0.5.0
 python-dotenv==1.0.0
 pydantic==2.10.3
 colorama==0.4.6
+langfuse>=2.58.0
