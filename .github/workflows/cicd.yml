@@ -98,7 +98,7 @@ jobs:
   # 5. DOCKER BUILD 
   docker-build:
     name: "5 · Docker Build"
-    needs: test
+    needs: [setup,test]
     if: always() && (github.event.inputs.target_job == 'docker-build' || github.event.inputs.target_job == 'all' || github.event_name != 'workflow_dispatch')
     runs-on: self-hosted
     steps:
