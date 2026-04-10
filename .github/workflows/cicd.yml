@@ -10,7 +10,7 @@ on:
       target_job:
         description: 'Sélectionnez le job à tester'
         required: true
-        default: 'all'
+        default: 'deploy'
         type: choice
         options:
           - all
@@ -135,5 +135,4 @@ jobs:
     steps:
       - name: Docker Compose Deploy
         run: |
-          docker compose pull
           docker compose up -d --force-recreate
