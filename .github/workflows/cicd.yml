@@ -75,7 +75,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Run Ruff fix
-        run: python3 -m ruff check . --fix
+        run: python3 -m ruff check . --fix --unsafe-fixes
       - name: Run Ruff check
         run: python3 -m ruff check . 
         
@@ -129,10 +129,26 @@ jobs:
   # 7. DEPLOY
   deploy:
     name: "7 · Deploy"
-    needs: docker-push
-    if: always() && (github.event.inputs.target_job == 'deploy' || github.event.inputs.target_job == 'all' || github.event_name != 'workflow_dispatch')
+    needs: [setup, docker-push]
     runs-on: self-hosted
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Docker Compose Deploy
         run: |
+          # On construit le nom complet de l'image avec le tag du commit
+          export AGENT_IMAGE="medyassinebensaid/devops-ai-agent:${{ needs.setup.outputs.short_sha }}"
+          
+          echo "🚀 Déploiement de l'image : $AGENT_IMAGE"
+          
+          # On lance le déploiement
           docker compose up -d --force-recreate
+        env:
+          # On injecte les secrets nécessaires
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
+          LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
+          LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
+          # On définit aussi AGENT_IMAGE en variable d'env pour Compose
+          AGENT_IMAGE: "medyassinebensaid/devops-ai-agent:${{ needs.setup.outputs.short_sha }}"
