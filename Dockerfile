@@ -27,6 +27,7 @@ RUN useradd -m -u 1000 agentuser && chown -R agentuser:agentuser /app
 USER agentuser
 
 # Env defaults (overridden by docker-compose / CI)
+ENV PYTHONPATH=/app
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV APP_ENV=production

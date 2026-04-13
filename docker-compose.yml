@@ -2,7 +2,7 @@ version: "3.9"
 
 services:
   agent:
-    image: ${AGENT_IMAGE:-devops-agent:local}
+    image: ${AGENT_IMAGE}
     build:
       context: .
       dockerfile: Dockerfile
