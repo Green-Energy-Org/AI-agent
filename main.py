@@ -88,7 +88,7 @@ def main():
             
             # Run agent
             print(f"\n{Fore.BLUE}Agent is thinking...{Style.RESET_ALL}\n")
-            response = run_agent(user_input)
+            run_agent(user_input)
             
             # Response is already logged by the agent
             
