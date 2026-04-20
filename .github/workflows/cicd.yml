@@ -28,6 +28,7 @@ env:
   DOCKER_IMAGE: "${{ secrets.DOCKERHUB_USERNAME }}/devops-ai-agent"
   LANGFUSE_BASE_URL: "http://localhost:3000"
   PYTHON_VERSION: "3.11"
+  K8S_NAMESPACE: "ai-agent-dev"
 
 jobs:
   # 1. SETUP
@@ -125,7 +126,7 @@ jobs:
           docker push ${{ env.DOCKER_IMAGE }}:${{ needs.setup.outputs.short_sha }}
 
   # 7. DEPLOY
-  deploy:
+  deploy-docker:
     name: "7 · Deploy"
     needs: [setup, docker-push]
     if: always() && (github.event.inputs.target_job == 'deploy' || github.event.inputs.target_job == 'all' || github.event_name != 'workflow_dispatch')
@@ -144,3 +145,38 @@ jobs:
           LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
           LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
           AGENT_IMAGE: "${{ env.DOCKER_IMAGE }}:${{ needs.setup.outputs.short_sha }}"
+    
+  deploy-minikube:
+    name: "8 · Deploy Minikube"
+    needs: [setup, docker-push]
+    if: always() && (github.event.inputs.target_job == 'deploy-minikube' || github.event.inputs.target_job == 'all' || github.event_name != 'workflow_dispatch')
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Kustomize Personalization
+        working-directory: ./k8s/overlays/minikube
+        run: |
+          # Mise à jour directe de l'image et du namespace
+          kustomize edit set image ai-agent-image=${{ env.DOCKER_IMAGE }}:${{ needs.setup.outputs.short_sha }}
+          kustomize edit set namespace ${{ env.K8S_NAMESPACE }}
+
+      - name: Deploy to K8s
+        run: |
+          # Gestion du Namespace et des Secrets en une seule passe
+          kubectl create namespace ${{ env.K8S_NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+          
+          kubectl create secret generic ai-agent-secrets \
+            --from-literal=GROQ_API_KEY=${{ secrets.GROQ_API_KEY }} \
+            --from-literal=LANGFUSE_SECRET_KEY=${{ secrets.LANGFUSE_SECRET_KEY }} \
+            --from-literal=LANGFUSE_PUBLIC_KEY=${{ secrets.LANGFUSE_PUBLIC_KEY }} \
+            --namespace ${{ env.K8S_NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+
+          # Déploiement Kustomize
+          kubectl apply -k ./k8s/overlays/minikube
+
+      - name: Verify Agent Readiness
+        run: |
+          kubectl rollout status deployment/ai-agent-deployment -n ${{ env.K8S_NAMESPACE }} --timeout=60s
+          echo "🚀 Agent déployé. Utilise 'kubectl attach' pour interagir avec le bot."
