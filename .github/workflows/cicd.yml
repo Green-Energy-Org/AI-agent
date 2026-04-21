@@ -177,11 +177,15 @@ jobs:
           kustomize edit set image ai-agent-image=${{ env.DOCKER_IMAGE }}:${{ needs.setup.outputs.short_sha }}
           kustomize edit set namespace ${{ env.K8S_NAMESPACE }}
 
+
       - name: Deploy to K8s
         run: |
           kubectl create namespace ${{ env.K8S_NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
-          kubectl delete secret ai-agent-secrets --namespace ${{ env.K8S_NAMESPACE }} --ignore-not-found
-          kubectl create secret generic ai-agent-secrets --from-literal=GROQ_API_KEY=${{ secrets.GROQ_API_KEY }} --from-literal=LANGFUSE_SECRET_KEY=${{ secrets.LANGFUSE_SECRET_KEY }} --from-literal=LANGFUSE_PUBLIC_KEY=${{ secrets.LANGFUSE_PUBLIC_KEY }} --namespace ${{ env.K8S_NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+          if ! kubectl get secret ai-agent-secrets --namespace ${{ env.K8S_NAMESPACE }} > /dev/null 2>&1; then
+            kubectl create secret generic ai-agent-secrets --from-literal=GROQ_API_KEY=${{ secrets.GROQ_API_KEY }} --from-literal=LANGFUSE_SECRET_KEY=${{ secrets.LANGFUSE_SECRET_KEY }} --from-literal=LANGFUSE_PUBLIC_KEY=${{ secrets.LANGFUSE_PUBLIC_KEY }} --namespace ${{ env.K8S_NAMESPACE }}
+          else
+            echo "Secret ai-agent-secrets déjà existant, skip."
+          fi
           kubectl apply -k ./k8s/overlays/minikube
 
       - name: Verify Agent Readiness
