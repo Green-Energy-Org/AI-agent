@@ -155,6 +155,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Ensure Minikube is Running
+        run: |
+          if ! minikube status > /dev/null 2>&1; then
+            echo "🚜 Démarrage de Minikube..."
+            minikube start --driver=docker
+          fi
+
+      - name: Setup Kustomize
+        run: |
+          if ! command -v kustomize &> /dev/null; then
+            echo "🔧 Installation de Kustomize..."
+            curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+            sudo mv kustomize /usr/local/bin/
+          fi
+
       - name: Kustomize Personalization
         working-directory: ./k8s/overlays/minikube
         run: |
