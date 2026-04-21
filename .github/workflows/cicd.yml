@@ -177,7 +177,9 @@ jobs:
           kustomize edit set image ai-agent-image=${{ env.DOCKER_IMAGE }}:${{ needs.setup.outputs.short_sha }}
           kustomize edit set namespace ${{ env.K8S_NAMESPACE }}
 
-
+      - name: Debug FS structure
+        run: ls -R k8s/
+        
       - name: Deploy to K8s
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
