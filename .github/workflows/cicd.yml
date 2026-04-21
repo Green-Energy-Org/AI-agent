@@ -181,6 +181,7 @@ jobs:
         run: |
           # 1. Création du namespace
           kubectl create namespace ${{ env.K8S_NAMESPACE }} --dry-run=client -o yaml | kubectl apply -f -
+          kubectl delete secret ai-agent-secrets --namespace ${{ env.K8S_NAMESPACE }} --ignore-not-found
 
           # 2. Création du secret (Tout sur les lignes consécutives sans sauts de ligne vides)
           kubectl create secret generic ai-agent-secrets \
