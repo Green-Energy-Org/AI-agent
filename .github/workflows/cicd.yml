@@ -21,6 +21,7 @@ on:
           - docker-build
           - docker-push
           - deploy
+          - deploy-minikube
 
 env:
   PROJECT_NAME: "DevOps-AI-AGENT"
