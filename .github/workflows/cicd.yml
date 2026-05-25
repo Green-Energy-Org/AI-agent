@@ -146,9 +146,39 @@ jobs:
           LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
           LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
           AGENT_IMAGE: "${{ env.DOCKER_IMAGE }}:${{ needs.setup.outputs.short_sha }}"
+  
+
+  evaluate:
+    name: "8 · LLM Evaluate (Quality Gate)"
+    needs: deploy-docker
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+      - name: Wait for agent to warm up
+        run: sleep 30
+      - name: Run LLM Evaluator + Quality Gate
+        run: |
+          export PYTHONPATH=$PYTHONPATH:$(pwd)
+          python3 -m monitoring.eval_runner
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
+          LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
+          LANGFUSE_BASE_URL: ${{ env.LANGFUSE_BASE_URL }}
+          QUALITY_THRESHOLD: ${{ env.QUALITY_THRESHOLD }}
+      - name: Post score summary to PR
+        if: github.event_name == 'pull_request'
+        run: python3 monitoring/pr_comment.py
+        env:
+          LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
+          LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
+          LANGFUSE_BASE_URL: ${{ env.LANGFUSE_BASE_URL }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
     
   deploy-minikube:
-    name: "8 · Deploy Minikube"
+    name: "9 · Deploy Minikube"
     needs: [setup, docker-push]
     if: always() && (github.event.inputs.target_job == 'deploy-minikube' || github.event.inputs.target_job == 'all' || github.event_name != 'workflow_dispatch')
     runs-on: self-hosted

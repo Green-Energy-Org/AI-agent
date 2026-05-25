@@ -11,7 +11,7 @@ from utils.memory_store import conversation_memory
 from langfuse.langchain import CallbackHandler
 from langfuse import observe, get_client
 
-# --- FIX: single shared handler + guaranteed flush on container exit ---
+# ── Langfuse setup ───────────────────────────────────────────────────────────
 langfuse_client = get_client()
 langfuse_handler = CallbackHandler()   # one instance, reused across all runs
 
@@ -31,6 +31,15 @@ def _sigterm_handler(signum, frame):
 
 signal.signal(signal.SIGTERM, _sigterm_handler)
 
+# Lazy import of scorer (avoids crash if the module is missing or GROQ_API_KEY not set)
+def _get_scorer():
+    try:
+        from monitoring.langfuse_scorer import inline_score
+        return inline_score
+    except Exception as e:
+        logger.log_error(f"Scorer import failed: {e}")
+        return None
+
 def print_banner():
     """Print welcome banner"""
     banner = f"""
@@ -48,8 +57,7 @@ Type 'clear' to clear conversation history.
 
 @observe(name="agent-run")
 def run_agent(query: str) -> str:
-    """Run the agent with a query"""
-    # FIX: reuse shared handler instead of creating per-call
+    """Run the agent with a query and score the output inline."""
     initial_state: AgentState = {
         "query": query,
         "messages": [],
@@ -62,6 +70,7 @@ def run_agent(query: str) -> str:
         "final_answer": ""
     }
     
+    answer = ""
     try:
         final_state = agent_graph.invoke(
             initial_state,
@@ -69,15 +78,26 @@ def run_agent(query: str) -> str:
         )
         answer = final_state["final_answer"]
         return answer
-    
+
     except Exception as e:
         error_msg = f"Agent error: {str(e)}"
         logger.log_error(error_msg)
-        return f"I apologize, but I encountered an error: {str(e)}\nPlease try rephrasing your question."
+        answer = f"I apologize, but I encountered an error: {str(e)}\nPlease try rephrasing your question."
+        return answer
+
     finally:
-        # FIX: flush after every invocation so Docker doesn't lose buffered spans
+        # ── Inline scoring using the Langfuse client's own trace ID method ──
+        try:
+            trace_id = langfuse_client.get_current_trace_id()
+            if trace_id and answer:
+                inline_score = _get_scorer()
+                if inline_score:
+                    inline_score(trace_id, query, answer)
+        except Exception as e:
+            logger.log_error(f"Inline scoring failed: {e}")
+
         _flush_langfuse()
-    
+
 def main():
     """Main CLI loop"""
     

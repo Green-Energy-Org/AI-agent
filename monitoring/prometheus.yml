@@ -4,7 +4,7 @@ global:
 scrape_configs:
   - job_name: "devops-agent"
     static_configs:
-      - targets: ["agent:8000"]   # expose /metrics via future prometheus_client if needed
+      - targets: ["agent:8001"]   # expose /metrics via future prometheus_client if needed
     metrics_path: /metrics
 
   - job_name: "prometheus"
