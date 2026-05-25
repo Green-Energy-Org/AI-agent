@@ -1,4 +1,5 @@
 import json
+import atexit
 from typing import Literal
 from langgraph.graph import StateGraph, END
 from langchain_groq import ChatGroq
@@ -12,13 +13,10 @@ from utils.logger import logger
 from utils.memory_store import conversation_memory
 
 from langfuse import observe, get_client
-from langfuse.langchain import CallbackHandler
 
-# Initialize Langfuse client
+# Single Langfuse client — shared across all nodes
 langfuse = get_client()
-
-# Initialize Langfuse CallbackHandler for Langchain (tracing)
-langfuse_handler = CallbackHandler()
+atexit.register(langfuse.flush)  # FIX: flush on process exit
 
 # Initialize LLM
 llm = ChatGroq(
@@ -163,7 +161,9 @@ def tool_execution_node(state: AgentState) -> AgentState:
         if tool_name == "web_search":
             observation = web_search_tool.invoke({"query": query})
         elif tool_name == "knowledge_base":
-            observation = knowledge_base_tool.invoke({"topic": query})
+            # FIX: use semantic RAG instead of dict lookup
+            from tools.rag_tool import rag_tool
+            observation = rag_tool.invoke({"query": query})
         else:
             observation = f"Error: Unknown tool '{tool_name}'"
             logger.log_error(f"Unknown tool: {tool_name}")

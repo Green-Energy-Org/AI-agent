@@ -1,4 +1,6 @@
 import sys
+import atexit
+import signal
 from colorama import Fore, Style
 from agent.graph import agent_graph
 from agent.state import AgentState
@@ -7,7 +9,27 @@ from utils.logger import logger
 from utils.memory_store import conversation_memory
 
 from langfuse.langchain import CallbackHandler
-from langfuse import observe
+from langfuse import observe, get_client
+
+# --- FIX: single shared handler + guaranteed flush on container exit ---
+langfuse_client = get_client()
+langfuse_handler = CallbackHandler()   # one instance, reused across all runs
+
+def _flush_langfuse():
+    """Ensure all buffered traces are sent before process dies."""
+    try:
+        langfuse_client.flush()
+    except Exception:
+        pass
+
+atexit.register(_flush_langfuse)
+
+# Handle SIGTERM (docker stop) gracefully
+def _sigterm_handler(signum, frame):
+    _flush_langfuse()
+    sys.exit(0)
+
+signal.signal(signal.SIGTERM, _sigterm_handler)
 
 def print_banner():
     """Print welcome banner"""
@@ -27,8 +49,7 @@ Type 'clear' to clear conversation history.
 @observe(name="agent-run")
 def run_agent(query: str) -> str:
     """Run the agent with a query"""
-    langfuse_handler = CallbackHandler()
-    # Initialize state with proper schema
+    # FIX: reuse shared handler instead of creating per-call
     initial_state: AgentState = {
         "query": query,
         "messages": [],
@@ -42,14 +63,20 @@ def run_agent(query: str) -> str:
     }
     
     try:
-        # Run the agent graph
-        final_state = agent_graph.invoke(initial_state,config={"callbacks": [langfuse_handler]})
-        return final_state["final_answer"]
+        final_state = agent_graph.invoke(
+            initial_state,
+            config={"callbacks": [langfuse_handler]}
+        )
+        answer = final_state["final_answer"]
+        return answer
     
     except Exception as e:
         error_msg = f"Agent error: {str(e)}"
         logger.log_error(error_msg)
         return f"I apologize, but I encountered an error: {str(e)}\nPlease try rephrasing your question."
+    finally:
+        # FIX: flush after every invocation so Docker doesn't lose buffered spans
+        _flush_langfuse()
     
 def main():
     """Main CLI loop"""
