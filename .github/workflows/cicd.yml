@@ -229,7 +229,7 @@ jobs:
       - name: Ensure Minikube is Running
         run: |
           if ! minikube status > /dev/null 2>&1; then
-            minikube start --driver=docker --force
+            minikube start --driver=docker
           fi
       - name: Setup Kustomize
         run: |
