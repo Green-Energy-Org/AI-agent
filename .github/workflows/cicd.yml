@@ -42,6 +42,10 @@ jobs:
     outputs:
       short_sha: ${{ steps.vars.outputs.short_sha }}
     steps:
+      - name: Set Short SHA
+        shell: bash
+        run: |
+          echo "short_sha=${GITHUB_SHA::8}" >> "$GITHUB_OUTPUT"
       - name: Checkout
         uses: actions/checkout@v4
       - name: Compute Vars
@@ -227,7 +231,7 @@ jobs:
       - name: Ensure Minikube is Running
         run: |
           if ! minikube status > /dev/null 2>&1; then
-            minikube start --driver=docker
+            minikube start --driver=docker --force
           fi
       - name: Setup Kustomize
         run: |
