@@ -40,17 +40,15 @@ jobs:
     container:
       image: ubuntu:22.04
     outputs:
-      short_sha: ${{ steps.vars.outputs.short_sha }}
+      short_sha: ${{ steps.get_sha.outputs.short_sha }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
       - name: Set Short SHA
+        id: get_sha
         shell: bash
         run: |
           echo "short_sha=${GITHUB_SHA::8}" >> "$GITHUB_OUTPUT"
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Compute Vars
-        id: vars
-        run: echo "short_sha=${GITHUB_SHA::8}" >> "$GITHUB_OUTPUT"
 
   # 2 · INSTALL
   install:
