@@ -20,7 +20,8 @@ on:
           - test
           - docker-build
           - docker-push
-          - deploy
+          - deploy-docker
+          - evaluate
           - deploy-minikube
 
 env:
@@ -147,7 +148,7 @@ jobs:
   deploy-docker:
     name: "7 · Deploy"
     needs: [setup, docker-push]
-    if: always() && (github.event.inputs.target_job == 'deploy' || github.event.inputs.target_job == 'all' || github.event_name != 'workflow_dispatch')
+    if: always() && (github.event.inputs.target_job == 'deploy-docker' || github.event.inputs.target_job == 'all' || github.event_name != 'workflow_dispatch')
     runs-on: self-hosted
     container:
       image: ubuntu:22.04
@@ -175,6 +176,7 @@ jobs:
   evaluate:
     name: "8 · LLM Evaluate"
     needs: deploy-docker
+    if: always() && (github.event.inputs.target_job == 'evaluate' || github.event.inputs.target_job == 'all' || github.event_name != 'workflow_dispatch')
     runs-on: self-hosted
     container:
       image: python:3.11-slim
