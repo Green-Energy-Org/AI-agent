@@ -119,6 +119,8 @@ jobs:
       - name: Install Docker CLI
         run: apt-get update && apt-get install -y docker.io
       - name: Build Local Image
+        env:
+          DOCKER_API_VERSION: 1.41
         run: |
           docker build --no-cache -t ${{ env.DOCKER_IMAGE }}:latest \
                                  -t ${{ env.DOCKER_IMAGE }}:${{ needs.setup.outputs.short_sha }} .
