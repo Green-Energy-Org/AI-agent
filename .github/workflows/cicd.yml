@@ -41,6 +41,8 @@ jobs:
     container:
       image: medyassinebensaid/ecofloc-ebpf:1.0
       options: --privileged
+      volumes:
+        - /home/mbensaid/energy-data:/energy-data  
     outputs:
       short_sha: ${{ steps.get_sha.outputs.short_sha }}
     steps:
@@ -61,6 +63,8 @@ jobs:
     container:
       image: medyassinebensaid/ecofloc-ebpf:1.0
       options: --privileged
+      volumes:
+        - /home/mbensaid/energy-data:/energy-data
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -77,6 +81,8 @@ jobs:
     container:
       image: medyassinebensaid/ecofloc-ebpf:1.0
       options: --privileged
+      volumes:
+        - /home/mbensaid/energy-data:/energy-data
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -95,6 +101,8 @@ jobs:
     container:
       image: medyassinebensaid/ecofloc-ebpf:1.0
       options: --privileged
+      volumes:
+        - /home/mbensaid/energy-data:/energy-data
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -117,6 +125,7 @@ jobs:
       image: medyassinebensaid/ecofloc-ebpf:1.0
       options: --privileged
       volumes:
+        - /home/mbensaid/energy-data:/energy-data
         - /var/run/docker.sock:/var/run/docker.sock
     steps:
       - name: Checkout
@@ -139,6 +148,7 @@ jobs:
       image: medyassinebensaid/ecofloc-ebpf:1.0
       options: --privileged
       volumes:
+        - /home/mbensaid/energy-data:/energy-data
         - /var/run/docker.sock:/var/run/docker.sock
     steps:
       - name: Install Docker CLI
@@ -162,6 +172,7 @@ jobs:
       image: medyassinebensaid/ecofloc-ebpf:1.0
       options: --privileged
       volumes:
+        - /home/mbensaid/energy-data:/energy-data
         - /var/run/docker.sock:/var/run/docker.sock
         - /home/mbensaid:/home/mbensaid
     steps:
@@ -226,6 +237,7 @@ jobs:
       image: medyassinebensaid/ecofloc-ebpf:1.0
       options: --privileged
       volumes:
+        - /home/mbensaid/energy-data:/energy-data
         - /var/run/docker.sock:/var/run/docker.sock
         - /home/mbensaid/.minikube:/root/.minikube
         - /home/mbensaid/.kube:/root/.kube
