@@ -38,14 +38,22 @@ jobs:
     name: "1 · Setup"
     if: github.event.inputs.target_job == 'setup' || github.event.inputs.target_job == 'all' || github.event_name != 'workflow_dispatch'
     runs-on: self-hosted
-    container:
-      image: medyassinebensaid/ecofloc-ebpf:1.1
-      options: --privileged
-      volumes:
-        - /home/mbensaid/energy-data:/energy-data  
     outputs:
       short_sha: ${{ steps.get_sha.outputs.short_sha }}
     steps:
+      - name: Start eBPF sidecar
+        run: |
+          docker run -d --name ebpf-sidecar \
+            --pid=container:$(hostname) \
+            --privileged \
+            --security-opt apparmor=unconfined \
+            -v /sys:/sys:ro \
+            -v /proc:/proc:ro \
+            -v /home/mbensaid/energy-data:/energy-data \
+            -e SIDECAR_MODE=true \
+            -e TARGET_PID=1 \
+            -e ENERGY_COLLECTOR_URL="${{ secrets.ENERGY_COLLECTOR_URL }}" \
+            medyassinebensaid/ecofloc-ebpf:1.1
       - name: Checkout
         uses: actions/checkout@v4
       - name: Set Short SHA
