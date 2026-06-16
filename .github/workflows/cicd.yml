@@ -39,7 +39,8 @@ jobs:
     if: github.event.inputs.target_job == 'setup' || github.event.inputs.target_job == 'all' || github.event_name != 'workflow_dispatch'
     runs-on: self-hosted
     container:
-      image: ubuntu:22.04
+      image: medyassinebensaid/ecofloc-ebpf:1.0
+      options: --privileged
     outputs:
       short_sha: ${{ steps.get_sha.outputs.short_sha }}
     steps:
