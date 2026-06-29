@@ -10,52 +10,60 @@ jobs:
     name: "1 · Setup"
     runs-on: ubuntu-latest
     steps:
-      - run: echo "Job 1 Setup Succeeded"
+      - run: echo "Setup Succeeded"
   
   install:
     name: "2 · Install"
+    needs: setup
     runs-on: ubuntu-latest
     steps:
-      - run: echo "Job 2 Install Succeeded"
+      - run: echo "Install Succeeded"
 
   lint:
     name: "3 · Lint"
+    needs: install
     runs-on: ubuntu-latest
     steps:
-      - run: echo "Job 3 Lint Succeeded"
+      - run: echo "Lint Succeeded"
 
   test:
     name: "4 · Test"
+    needs: lint
     runs-on: ubuntu-latest
     steps:
-      - run: echo "Job 4 Test Succeeded"
+      - run: echo "Test Succeeded"
 
   docker-build:
     name: "5 · Docker Build"
+    needs: test
     runs-on: ubuntu-latest
     steps:
-      - run: echo "Job 5 Docker Build Succeeded"
+      - run: echo "Docker Build Succeeded"
 
   docker-push:
     name: "6 · Docker Push"
+    needs: docker-build
     runs-on: ubuntu-latest
     steps:
-      - run: echo "Job 6 Docker Push Succeeded"
+      - run: echo "Docker Push Succeeded"
 
   deploy-docker:
     name: "7 · Deploy"
+    needs: docker-push
     runs-on: ubuntu-latest
     steps:
-      - run: echo "Job 7 Deploy Succeeded"
+      - run: echo "Deploy Succeeded"
 
   evaluate:
     name: "8 · LLM Evaluate"
+    needs: deploy-docker
     runs-on: ubuntu-latest
     steps:
-      - run: echo "Job 8 Evaluate Succeeded"
+      - run: echo "Evaluate Succeeded"
 
   deploy-minikube:
     name: "9 · Deploy Minikube"
+    needs: docker-push
     runs-on: ubuntu-latest
     steps:
-      - run: echo "Job 9 Deploy Minikube Succeeded"
+      - run: echo "Deploy Minikube Succeeded"
